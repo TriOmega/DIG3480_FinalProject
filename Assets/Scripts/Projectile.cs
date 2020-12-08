@@ -28,6 +28,7 @@ public class Projectile : MonoBehaviour
     {
         EnemyController e = other.collider.GetComponent<EnemyController>();
         HardEnemyController h = other.collider.GetComponent<HardEnemyController>();
+        BossController b = other.collider.GetComponent<BossController>();
         if(e != null)
         {
             e.Fix();
@@ -36,7 +37,10 @@ public class Projectile : MonoBehaviour
         {
             h.Fix();
         }
-       
-       Destroy(gameObject);
+        else if(b != null)
+        {
+            b.Damage();
+        }
+        Destroy(gameObject);
     }
 }

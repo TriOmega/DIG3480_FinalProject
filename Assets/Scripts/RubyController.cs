@@ -23,6 +23,8 @@ public class RubyController : MonoBehaviour
     public Text robotText;
     public Text gameOverText;
     public Text cogText;
+    public Text launcherText;
+    public Text bossText;
 
     Rigidbody2D rigidbody2d;
     float horizontal;
@@ -44,7 +46,12 @@ public class RubyController : MonoBehaviour
     bool gameOver = false;
     AudioController audioController;
 
+    BossController bossController;
+
     public static int level = 1;
+
+    bool alienTalked = false;
+    static int launcherType = 0;
 
     void Start()
     {
@@ -100,14 +107,28 @@ public class RubyController : MonoBehaviour
                 NonPlayerCharacter character = hit.collider.GetComponent<NonPlayerCharacter>();
                 if (character != null)
                 {
-                    if (robotScore == 4)
+                    if (character.tag == "Jambi")
                     {
-                        level += 1;
-                        SceneManager.LoadScene("Scene2");
+                        if (robotScore == 4)
+                        {
+                            level += 1;
+                            SceneManager.LoadScene("Scene2");
+                        }
+                        else
+                        {
+                            character.DisplayDialog();
+                        }
                     }
-                    else
+                    else if (character.tag == "Alien")
                     {
-                        character.DisplayDialog();
+                        if (alienTalked == true) {
+                            SceneManager.LoadScene("SceneBoss");
+                        }
+                        else 
+                        {
+                            character.DisplayDialog();
+                            alienTalked = true;
+                        }
                     }
                 }
             }
@@ -167,13 +188,29 @@ public class RubyController : MonoBehaviour
     }
     void Launch()
     {
-        GameObject projectileObject = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f, Quaternion.identity);
+        if (launcherType == 0)
+        {
+            GameObject projectileObject = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f, Quaternion.identity);
 
-        Projectile projectile = projectileObject.GetComponent<Projectile>();
-        projectile.Launch(lookDirection, 300);
+            Projectile projectile = projectileObject.GetComponent<Projectile>();
+            projectile.Launch(lookDirection, 300);
+        } 
+        else if (launcherType == 1)
+        {
+            GameObject projectileObject1 = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f + Vector2.left, Quaternion.identity);
+            GameObject projectileObject2 = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f, Quaternion.identity);
+            GameObject projectileObject3 = Instantiate(projectilePrefab, rigidbody2d.position + Vector2.up * 0.5f + Vector2.right, Quaternion.identity);
+
+            Projectile projectile1 = projectileObject1.GetComponent<Projectile>();
+            projectile1.Launch(RotateVector(lookDirection, 20.0f), 300);
+            Projectile projectile2 = projectileObject2.GetComponent<Projectile>();
+            projectile2.Launch(lookDirection, 300);
+            Projectile projectile3 = projectileObject3.GetComponent<Projectile>();
+            projectile3.Launch(RotateVector(lookDirection, -20.0f), 300);
+            
+        }
         cogAmmo -= 1;
         UpdateScore();
-
         animator.SetTrigger("Launch");
         PlaySound(throwSound);
     }
@@ -201,6 +238,24 @@ public class RubyController : MonoBehaviour
     public void UpdateScore(){
         robotText.text = "Robots Fixed: " + robotScore;
         cogText.text = "Cog Ammo: " + cogAmmo;
+        if (launcherType == 1)
+        {
+            launcherText.text = "Launcher Type: Spread";
+        }
+        else
+        {
+            launcherText.text = "Launcher Type: Normal";
+        }
+        GameObject bossObject = GameObject.FindWithTag("Boss");
+        if (bossObject != null)
+        {
+            bossController = bossObject.GetComponent<BossController>();
+            bossText.text = "Boss Health: " + bossController.bossHealth;
+        }
+        else
+        {
+            bossText.text = "Boss Health: N/A";
+        }
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -211,5 +266,25 @@ public class RubyController : MonoBehaviour
             UpdateScore();
             Destroy(other.gameObject);
         }
+        if(other.tag == "SpreadBonus")
+        {
+            launcherType = 1;
+            UpdateScore();
+            Destroy(other.gameObject);
+            SceneManager.LoadScene("Scene1");
+        }
+    }
+
+    Vector2 RotateVector(Vector2 originalVector, float angle)
+    {
+        if (originalVector.y < 0)
+        {
+            return Quaternion.Euler(0, 0, angle * -1.0f) * originalVector;
+        }
+        else 
+        {
+            return Quaternion.Euler(0, 0, angle) * originalVector;
+        }
+        //return new Vector2 (((originalVector.x * Mathf.Cos(angle)) - (originalVector.y * Mathf.Sin(angle))), ((originalVector.x * Mathf.Sin(angle)) + (originalVector.y * Mathf.Cos(angle))));
     }
 }
